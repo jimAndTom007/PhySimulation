@@ -1,0 +1,139 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+'''
+@IDE     ：PyCharm 
+@Author  ：Zhang.Jing
+@Mail    : jing.zhang2020@kingsignal.com
+@Date    ：2020-11-4 10:13 
+'''
+import scipy.fftpack as scf
+import scipy.signal as sg
+import numpy as np
+from basicFuc.basic import Moudel
+import matplotlib.pyplot as plt
+
+
+class PrachDecoder(Moudel):
+
+    def __init__(self, **kwargs):
+        super(PrachDecoder, self).__init__(**kwargs)
+        self.gnb_resample = kwargs.get('gnb_resample', 122.88e6)
+        self.power_thresh_point = kwargs.get('power_thresh_point', 10)
+        self.dectect_thresh = kwargs.get('dectect_thresh', 10)
+        self.decoder_fftsize = kwargs.get('decoder_fftsize', 2048)
+
+    def deframe(self, frame, ue_config):
+        self.plot(abs(frame[0]), title='收端时域功率谱', xlable='功率')
+        frame, upsample_ratio = self.upsampling(frame, ue_config)
+
+        cp_point = ue_config.cp_num * upsample_ratio
+        data_len = ue_config.fftsize_ue * upsample_ratio
+        repeat_num = ue_config.repeat_num
+        l_ra = ue_config.l_ra
+        re_pos = ue_config.re_pos
+        vail_data = frame[:, cp_point:cp_point + data_len * repeat_num]
+        vail_data_reshape = np.reshape(vail_data, [-1, repeat_num, data_len])
+        ddc_data = self.downsampling(vail_data_reshape, l_ra)
+        data_combine = self.data_combine(ddc_data)
+        freq_data = scf.fft(data_combine, axis=-1) / np.sqrt(data_combine.shape[-1])  # FIXME 降采后的频谱
+        freq_vail = freq_data[:, re_pos:re_pos + l_ra]
+        self.plot(abs(data_combine[0]), title='降采后时域功率谱', ylable='功率')
+        freq_db = 20 * np.log10(abs(freq_data))
+        self.plot(freq_db[0], title='降采后频域功率谱', ylable='功率/dBm')
+        return freq_vail
+
+    def decoder(self, freq_vail, sched_config):
+        u_cv_table = sched_config.u_cv_table
+        ncs = sched_config.ncs
+        thread_point_num = self.power_thresh_point
+        antnum = freq_vail.shape[0]  ###
+        fftsize = self.decoder_fftsize
+        detect_thread = self.dectect_thresh
+        detect_result = list()
+        preamble_idx = 0
+        for u, cv_table in u_cv_table.items():
+            base_seq = sched_config.generation_sequence(u, 0)
+            seq_matrix = np.tile(base_seq[None, :], [antnum, 1])
+            h = freq_vail * np.conj(seq_matrix)
+
+            h_time = scf.ifft(h, fftsize, axis=-1) * np.sqrt(fftsize)
+            power_spectr = np.mean(abs(h_time) ** 2, axis=0)
+            power_spectr_sort = np.sort(power_spectr)
+            power_thread = np.mean(power_spectr_sort[-thread_point_num:])
+            self.plot(power_spectr, title='时域功率谱')
+            for cv in cv_table:
+                win_in_idx, win_out_idx, win_before_len = \
+                    self.get_window_config(cv, fftsize, sched_config)
+                data_in_win = power_spectr[win_in_idx]
+                signal_idx = np.where(data_in_win >= power_thread)[0]
+                data_out_win = power_spectr[win_out_idx]
+                data_out_win[data_out_win >= power_thread] = 0
+                noise_power_mean = np.sum(data_out_win) / len(win_out_idx)
+                if len(signal_idx) != 0:
+                    signal_power_sum = np.sum(data_in_win[np.ix_(signal_idx)])
+                    signal_power_mean = signal_power_sum / len(signal_idx)
+                    ta_idx = int(np.sum([(idx + 1) * data_in_win[idx] for idx in signal_idx]) / \
+                                 np.sum([data_in_win[idx] for idx in signal_idx]))
+                    ta_idx -= 1
+                    sinr_linear = np.around(signal_power_mean / noise_power_mean)
+                else:
+                    # signal_power_sum = np.max(data_in_win)
+                    # signal_power_mean = signal_power_sum
+                    # ta_idx = np.where(data_in_win == signal_power_sum)[0][0]
+                    sinr_linear = 0
+                if sinr_linear >= detect_thread:
+                    rx_sinr_linear = np.round(signal_power_sum / (noise_power_mean * fftsize)
+                                              * self.ddc_ratio / self.upsample_ratio, 3)
+                    rx_sinr_db = np.round(10 * np.log10(rx_sinr_linear), 3)
+                    ta = self.cal_ta(ta_idx, win_before_len, fftsize)
+                    detect_result.append({'u': u, 'preamble_id': preamble_idx,
+                                          'ta': ta, 'rx_sinr_db': rx_sinr_db})
+                preamble_idx += 1
+        return detect_result
+
+    def upsampling(self, d_in, ue_sched):
+
+        upsample_ratio = int(self.gnb_resample / ue_sched.ue_resample)
+        coffec = [1]
+        d_out = sg.upfirdn(coffec, d_in, up=upsample_ratio, axis=-1)
+        d_out = np.concatenate([d_out, np.zeros([d_out.shape[0], upsample_ratio - 1], complex)], axis=-1)
+        self.add_property('upsample_ratio', upsample_ratio)
+        return d_out, upsample_ratio
+
+    def downsampling(self, data, l_ra):
+
+        if l_ra == 139:
+            seq_len = 256
+        elif l_ra == 839:
+            seq_len = 1536
+        coffec = [1]
+        ddc_ratio = data.shape[-1] // seq_len
+        ddc_data = sg.upfirdn(coffec, data, down=ddc_ratio, axis=-1)
+        # ddc_data=data[:,:,1::ddc_ratio]
+        self.add_property('ddc_ratio', ddc_ratio)
+        return ddc_data
+
+    def data_combine(self, d_in):
+        antnum, repeat_num = d_in.shape[:2]
+        d_combine_repeat = np.mean(d_in, axis=1)
+        return d_combine_repeat
+
+    def get_window_config(self, cv, fftsize, sched_config):
+        win_before = 1 / 4
+        l_ra = sched_config.l_ra
+        ncs = sched_config.ncs
+        win_len = fftsize * ncs // l_ra
+        win_pos = fftsize * cv // l_ra
+        win_before_len = int(win_len * win_before)
+        win_fore_len = win_len - win_before_len
+        tmp_idx = np.arange(win_pos - win_before_len,
+                            win_pos + win_fore_len)
+        win_in_idx = np.mod(np.sort(tmp_idx), fftsize)
+        win_out_idx = np.asarray(list(set(np.arange(fftsize)) - set(win_in_idx)))
+        return win_in_idx, win_out_idx, win_before_len
+
+    def cal_ta(self, ta_idx, win_before_len, fftsize):
+        tc_ratio = 480e3 * 4096 / self.gnb_resample
+
+        ta = (ta_idx - win_before_len) / fftsize * self.ddc_ratio * tc_ratio
+        return ta

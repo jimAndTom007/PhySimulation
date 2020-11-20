@@ -1,0 +1,60 @@
+{
+	"BeamHeadParameter" : {
+		"TTICyclicNum" : 1,
+		"PlotEnable" : true
+	},
+	"TTI_Parameter" : [
+		{
+			"Slot_id" : 1,
+			"CellNum" : 1,
+			"CellParameter" : [
+				{
+					"PrachFormat" : "B4",
+					"Ncs" :20,
+					"Prach_mu" : 0,
+					"Pusch_mu" : 1,
+					"U_logicIndex" : 10,
+					"GnbSample" : 122880000,
+					"UeNum" : 1,
+					"PrachConfig" : 1,
+					"GnbAntennaNum" : 64,
+					"PrachFFTSize" : 2048,
+					"PrachRbStar" : 2,
+					"ChannelType" : "by_pass"
+				}
+			],
+			"UeParameter" : [
+				{
+					"UeIdx" : 0,
+					"Preamble_id" : 10,
+					"TimeOffset" : 0,
+					"FrequencyOffset" : 0,
+					"UeAntennaNum" : 4,
+					"UeSample" : 30720000,
+					"RandSeed" : 100,
+					"TxSinr" : 0
+				},
+				{
+					"UeIdx" : 1,
+					"Preamble_id" : 30,
+					"TimeOffset" : 0,
+					"FrequencyOffset" : 0,
+					"UeAntennaNum" : 4,
+					"UeSample" : 30720000,
+					"RandSeed" : 100,
+					"TxSinr" : 10
+				},
+				{
+					"UeIdx" : 2,
+					"Preamble_id" : 50,
+					"TimeOffset" : 0,
+					"FrequencyOffset" : 0,
+					"UeAntennaNum" : 4,
+					"UeSample" : 30720000,
+					"RandSeed" : 100,
+					"TxSinr" : 20
+				}
+			]
+		}
+	]
+}
