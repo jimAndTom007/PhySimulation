@@ -30,7 +30,7 @@ class MultiChannel(Channel):
         tx_signal = self.fre_phase_enbale(tx_signal, self.uesample)
         tx_signal = self.time_phase_enable(tx_signal)
 
-        tmp = sio.loadmat(r'D:\workspace\amazing\data\text_signal.mat')
+        tmp = sio.loadmat(r'/Users/cc/Documents/amazing/data/text_signal.mat')
         tx_signal = tmp['tx_seq']
         theta_set = tmp['theta_set']
         rx_signal = tmp['rx_fading_seq']
@@ -55,9 +55,9 @@ class MultiChannel(Channel):
                         fadingcoeff_matrix[n_tx, n_rx, :] += np.sqrt(p_los) / amplitude_norm[n_path] * (
                                 (1 + 1j) / np.sqrt(2))
 
-            h = root_matrix @ np.reshape(fadingcoeff_matrix, [self.rx_antenna * self.tx_antenna, -1])
-            h_rsp = np.reshape(h, [self.tx_antenna, self.rx_antenna, -1])
-            signal_rx_npath = np.sum(h_rsp, 1) * tx_signal
+            h = root_matrix @ np.reshape(fadingcoeff_matrix, [self.tx_antenna * self.rx_antenna, -1])
+            h_rsp = np.reshape(h, [self.tx_antenna, self.rx_antenna, -1]).swapaxes(0,1) #rx*tx*path
+            signal_rx_npath = np.sum(h_rsp * np.tile(tx_signal[None,:,:],[self.rx_antenna,1,1]),axis=1)
             siganl_path_adjust_amp = signal_rx_npath * amplitude_norm[n_path]
             n_dalay = delay_sample[n_path]
             total_signal[:, n_dalay:n_dalay + signal_len] += siganl_path_adjust_amp

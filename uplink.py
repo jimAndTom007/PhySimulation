@@ -15,6 +15,7 @@ from ue.phy.prachtx import PrachIncoder
 from gnb.mac.schedule import PrachSchedule
 import matplotlib.pyplot as plt
 from UplinkFlawJson import ReadJson
+import os
 
 
 class GnbTransReceiver(MultiChannel):
@@ -97,5 +98,6 @@ def main(sinr, config_path):
 
 
 if __name__ == '__main__':
-    config_path = r'D:\workspace\amazing\simulation\demoJson\Ue1\prach_B4_3km_N5_M4.json'
-    main(0,config_path)
+    folder=os.path.dirname(__file__)
+    json_path=os.path.join(folder,'demoJson','Ue1','prach_B4_3km_N5_M4.json')
+    main(0,json_path)
