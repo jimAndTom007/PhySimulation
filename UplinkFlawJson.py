@@ -10,16 +10,28 @@ import scipy.io as sio
 import os
 
 
-def result_save(d_in, filename, folder=None):
-    if folder is None:
-        folder1 = os.path.dirname(__file__)
-        folder = os.path.join(folder1, 'simu_Result')
+def result_save(d_in, config_path):
+    folder = os.path.splitext(config_path)[0]
+    filename = os.path.splitext(os.path.basename(config_path))[0]
+
     if not os.path.exists(folder):
         os.mkdir(folder)
+    else:
+        del_files(folder)
 
     file_path = os.path.join(folder, filename + '.mat')
     sio.savemat(file_path, {'data': d_in})
 
+
+def del_files(path_file):
+    ls = os.listdir(path_file)
+    for i in ls:
+        f_path = os.path.join(path_file, i)
+        # 判断是否是一个目录,若是,则递归删除
+        if os.path.isdir(f_path):
+            del_files(f_path)
+        else:
+            os.remove(f_path)
 
 class ReadJson():
     def __init__(self):

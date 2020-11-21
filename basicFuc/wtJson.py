@@ -10,6 +10,7 @@
 import json
 import os
 import numpy as np
+from UplinkFlawJson import del_files
 
 json_dict = {
     "BeamHeadParameter": {
@@ -70,7 +71,7 @@ json_dict = {
                     "PowerOffset": 0,
                     "ChannelFade": "B",
                     "DelaySpredType": 2,
-                    "UeSpeed": 30,
+                    "UeSpeed": 3,
                     "MIMOChannelPolarieze": 0,
                     "MIMOChannelSpa": "low",
                     "ChannelType": "TDL"
@@ -105,19 +106,16 @@ def write(json_dict, folder_path, name, suff='.json'):
     with open(filepath, 'w') as fid:
         fid.write(json_str)
 
-
-if __name__ == '__main__':
-    folder_path = r'D:\workspace\amazing\simulation\demoJson'
-    ttinum = 200
-    # uenum_set = [1, 3]
-    # N_set = [5, 10, 15, 20]
-    # M_set = [4, 7, 10, 13, 16, 19]
-    uenum_set = [1]
-    N_set = [5]
-    M_set = [4]
+def gen_simu_json():
+    folder_path = os.path.join(os.path.abspath('..'), r'demoJson')
+    ttinum = 1
+    uenum_set = [2]
+    N_set = [10, 20, 30, 40]
+    M_set = [5, 10, 15, 20]
     json_dict['BeamHeadParameter']['TTICyclicNum'] = ttinum
     for uenum in uenum_set:
         folder_path1 = os.path.join(folder_path, 'Ue{}'.format(uenum))
+        del_files(folder_path1)
         for N in N_set:
             for M in M_set:
                 json_dict['TTI_Parameter'][0]['CellParameter'][0]['UeNum'] = uenum
@@ -127,3 +125,7 @@ if __name__ == '__main__':
                 #     json_dict['TTI_Parameter'][0]['UeParameter'][ueidx]['PrachDecoder']
 
                 write(json_dict, folder_path1, r'prach_B4_3km_N{}_M{}'.format(N, M))
+
+
+if __name__ == '__main__':
+    gen_simu_json()

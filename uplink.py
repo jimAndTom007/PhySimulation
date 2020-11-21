@@ -93,13 +93,17 @@ def main(sinr_set, config_path):
                 msg_result = gnb_tranmreceiver.receiver(frame, ue_sched_list)
                 simu_result[sinr_idx, tti_idx] = msg_result
 
-    result_save(simu_result, filename)
+    result_save(simu_result, config_path)
     if plot_enable:
         plt.show()
 
 
 if __name__ == '__main__':
-    folder = os.path.dirname(__file__)
-    json_path = os.path.join(folder, 'demoJson', 'prach_test.json')
-    sinr_set = [10]
-    main(sinr_set, json_path)
+    folder = os.path.join(os.path.dirname(__file__), r'demoJson', 'Ue2')
+    # json_path = os.path.join(folder, 'demoJson', 'prach_test.json')
+    file_set = os.listdir(folder)
+    sinr_set = [-20, -15, -10, -5, 0, 5, 10]
+    for filename in file_set:
+        if os.path.splitext(filename)[1] == '.json':
+            json_path = os.path.join(folder, filename)
+            main(sinr_set, json_path)
