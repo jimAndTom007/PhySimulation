@@ -100,6 +100,6 @@ def main(sinr_set, config_path):
 
 if __name__ == '__main__':
     folder = os.path.dirname(__file__)
-    json_path = os.path.join(folder, 'demoJson', 'Ue1', 'prach_B4_3km_N5_M4.json')
+    json_path = os.path.join(folder, 'demoJson', 'prach_test.json')
     sinr_set = [10]
     main(sinr_set, json_path)
