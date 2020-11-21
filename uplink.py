@@ -16,6 +16,7 @@ from gnb.mac.schedule import PrachSchedule
 import matplotlib.pyplot as plt
 from UplinkFlawJson import *
 import os
+from timeit import default_timer as timer
 
 
 class GnbTransReceiver(MultiChannel):
@@ -99,7 +100,8 @@ def main(sinr_set, config_path):
 
 
 if __name__ == '__main__':
-    folder = os.path.join(os.path.dirname(__file__), r'demoJson', 'Ue2')
+    tic=timer()
+    folder = os.path.join(os.path.dirname(__file__), r'demoJson', 'Ue1')
     # json_path = os.path.join(folder, 'demoJson', 'prach_test.json')
     file_set = os.listdir(folder)
     sinr_set = [-20, -15, -10, -5, 0, 5, 10]
@@ -107,3 +109,5 @@ if __name__ == '__main__':
         if os.path.splitext(filename)[1] == '.json':
             json_path = os.path.join(folder, filename)
             main(sinr_set, json_path)
+    toc=timer()
+    print("运行时间为：{}s".format(toc-tic))
