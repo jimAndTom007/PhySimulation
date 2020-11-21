@@ -1,7 +1,7 @@
 {
 	"BeamHeadParameter" : {
 		"TTICyclicNum" : 1,
-		"PlotEnable" : false
+		"PlotEnable" : true
 	},
 	"TTI_Parameter" : [
 		{
@@ -16,13 +16,13 @@
 					"U_logicIndex" : 10,
 					"GnbSample" : 122880000,
 					"FS" : 3500000000,
-					"UeNum" : 1,
+					"UeNum" : 3,
 					"PrachConfig" : 1,
 					"GnbAntennaNum" : 4,
 					"PrachFFTSize" : 2048,
 					"PrachRbStar" : 2,
 					"PrachDecoder" : {
-						"ThresholdPointNum" : 10,
+						"ThresholdPointNum" : 30,
 						"DectectThreshold" : 10,
 						"DecodeFFTSize" : 2048,
 						"DecoderObject" : "GnbTransReceiver"
@@ -57,7 +57,7 @@
 					"PowerOffset" : 0,
 					"ChannelFade" : "B",
 					"DelaySpredType" : 2,
-					"UeSpeed" : 30,
+					"UeSpeed" : 3,
 					"MIMOChannelPolarieze" : 0,
 					"MIMOChannelSpa" : "low",
 					"ChannelType" : "TDL"

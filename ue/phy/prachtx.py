@@ -37,8 +37,8 @@ class PrachIncoder(Moudel):
         resource_plot = resource_grid.copy()
         resource_plot[resource_plot == 0] = 0.001
         power_db = 20 * np.log10(abs(resource_plot[0]))
-        self.plot(power_db, title='发端信号频域功率谱', ylable='功率/dBm')
-        self.plot(abs(frame[0]), title='发端信号时域功率谱', ylable='功率')
+        # self.plot(power_db, title='发端信号频域功率谱', ylable='功率/dBm')
+        # self.plot(abs(frame[0]), title='发端信号时域功率谱', ylable='功率')
         return frame, ue_sched
 
     def frequency_resource_mapping(self, ue_sched, sequence):

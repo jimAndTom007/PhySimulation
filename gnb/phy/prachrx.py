@@ -42,14 +42,18 @@ class PrachDecoder(Moudel):
         self.plot(freq_db[0], title='降采后频域功率谱', ylable='功率/dBm')
         return freq_vail
 
-    def decoder(self, freq_vail, sched_config):
+    def decoder(self, freq_vail, sched_config_set):
+        preamble_id_set = []
+        for sched_config in sched_config_set:
+            preamble_id_set.append(sched_config.preamble_idx)
+
         u_cv_table = sched_config.u_cv_table
         ncs = sched_config.ncs
         thread_point_num = self.power_thresh_point
         antnum = freq_vail.shape[0]  ###
         fftsize = self.decoder_fftsize
         detect_thread = self.dectect_thresh
-        detect_result = list()
+        detect_flag = []
         preamble_idx = 0
         for u, cv_table in u_cv_table.items():
             base_seq = sched_config.generation_sequence(u, 0)
@@ -86,9 +90,25 @@ class PrachDecoder(Moudel):
                                               * self.ddc_ratio / self.upsample_ratio, 3)
                     rx_sinr_db = np.round(10 * np.log10(rx_sinr_linear), 3)
                     ta = self.cal_ta(ta_idx, win_before_len, fftsize)
-                    detect_result.append({'u': u, 'preamble_id': preamble_idx,
-                                          'ta': ta, 'rx_sinr_db': rx_sinr_db})
+
+                    print("u:{},  preamble_id:{},  ta:{},  rx_sinr_db:{}".format(u, preamble_idx, ta, rx_sinr_db))
+                    if preamble_idx in preamble_id_set:
+                        detect_flag.append(True)
+                    else:
+                        detect_flag.append(False)
+
                 preamble_idx += 1
+
+        if len(preamble_id_set) == len(detect_flag):
+            print("==========检测成功==========")
+            detect_result = 0
+        elif len(preamble_id_set) < len(detect_flag):
+            print("===========虚检===========")
+            detect_result = 1
+        elif len(preamble_id_set) > len(detect_flag):
+            print("===========漏检===========")
+            detect_result = -1
+
         return detect_result
 
     def upsampling(self, d_in, ue_sched):

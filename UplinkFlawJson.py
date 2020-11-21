@@ -6,6 +6,19 @@
 @Mail    : jing.zhang2020@kingsignal.com
 @Date    ：2020-11-19 18:51 
 '''
+import scipy.io as sio
+import os
+
+
+def result_save(d_in, filename, folder=None):
+    if folder is None:
+        folder1 = os.path.dirname(__file__)
+        folder = os.path.join(folder1, 'simu_Result')
+    if not os.path.exists(folder):
+        os.mkdir(folder)
+
+    file_path = os.path.join(folder, filename + '.mat')
+    sio.savemat(file_path, {'data': d_in})
 
 
 class ReadJson():

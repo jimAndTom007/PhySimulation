@@ -30,11 +30,6 @@ class MultiChannel(Channel):
         tx_signal = self.fre_phase_enbale(tx_signal, self.uesample)
         tx_signal = self.time_phase_enable(tx_signal)
 
-        tmp = sio.loadmat(r'/Users/cc/Documents/amazing/data/text_signal.mat')
-        tx_signal = tmp['tx_seq']
-        theta_set = tmp['theta_set']
-        rx_signal = tmp['rx_fading_seq']
-
         p_norm, p_los, p_delay = self._get_tdl_tap_and_delay_param()
         pathnum = len(p_delay)
         amplitude_norm = np.sqrt(p_norm)
@@ -47,9 +42,7 @@ class MultiChannel(Channel):
         for n_path in range(pathnum):
             for n_tx in range(self.tx_antenna):
                 for n_rx in range(self.rx_antenna):
-                    fadingcoeff_matrix[n_tx, n_rx, :] = self.rayleigh_fading(doppler_freqshift, t_start, signal_len,
-                                                                             theta_rand=theta_set[n_tx, n_rx, n_path,
-                                                                                        :])
+                    fadingcoeff_matrix[n_tx, n_rx, :] = self.rayleigh_fading(doppler_freqshift, t_start, signal_len)
 
                     if n_path == 0:
                         fadingcoeff_matrix[n_tx, n_rx, :] += np.sqrt(p_los) / amplitude_norm[n_path] * (
@@ -62,7 +55,6 @@ class MultiChannel(Channel):
             n_dalay = delay_sample[n_path]
             total_signal[:, n_dalay:n_dalay + signal_len] += siganl_path_adjust_amp
         d_out = total_signal[:, :signal_len]
-        diff = abs(d_out - rx_signal)
         return d_out
 
     def _get_tdl_tap_and_delay_param(self):
