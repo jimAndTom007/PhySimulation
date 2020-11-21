@@ -115,7 +115,8 @@ def gen_simu_json():
     json_dict['BeamHeadParameter']['TTICyclicNum'] = ttinum
     for uenum in uenum_set:
         folder_path1 = os.path.join(folder_path, 'Ue{}'.format(uenum))
-        del_files(folder_path1)
+        if os.path.exists(folder_path1):
+            del_files(folder_path1)
         for N in N_set:
             for M in M_set:
                 json_dict['TTI_Parameter'][0]['CellParameter'][0]['UeNum'] = uenum
