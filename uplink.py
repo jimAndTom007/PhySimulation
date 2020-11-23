@@ -76,7 +76,8 @@ def main(sinr_set, config_path):
             cell_num = config_tti.get('CellNum', 1)
             slot_id = config_tti.get('Slot_id', 1)
             for cell_idx in range(cell_num):
-                config = json_obj.config_read(json_config, tti_idx, cell_idx)
+                ttiIndex = 0
+                config = json_obj.config_read(json_config, ttiIndex, cell_idx)
                 gnb_tranmreceiver = GnbTransReceiver(**dict(config['cell_config'], plot_enable=plot_enable))
                 uenum = config_tti['CellParameter'][cell_idx].get('UeNum', 1)
                 ue_sched_list = []
@@ -100,14 +101,14 @@ def main(sinr_set, config_path):
 
 
 if __name__ == '__main__':
-    tic=timer()
-    folder = os.path.join(os.path.dirname(__file__), r'demoJson', 'Ue1')
+    tic = timer()
+    folder = os.path.join(os.path.dirname(__file__), r'demoJson', 'Ue2')
     # json_path = os.path.join(folder, 'demoJson', 'prach_test.json')
     file_set = os.listdir(folder)
-    sinr_set = [-20, -15, -10, -5, 0, 5, 10]
+    sinr_set = [-15,-10, -5, 5]
     for filename in file_set:
         if os.path.splitext(filename)[1] == '.json':
             json_path = os.path.join(folder, filename)
             main(sinr_set, json_path)
-    toc=timer()
-    print("运行时间为：{}s".format(toc-tic))
+    toc = timer()
+    print("运行时间为：{}s".format(toc - tic))

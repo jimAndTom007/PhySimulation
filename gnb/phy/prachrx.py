@@ -91,22 +91,25 @@ class PrachDecoder(Moudel):
                     rx_sinr_db = np.round(10 * np.log10(rx_sinr_linear), 3)
                     ta = self.cal_ta(ta_idx, win_before_len, fftsize)
 
-                    print("u:{},  preamble_id:{},  ta:{},  rx_sinr_db:{}".format(u, preamble_idx, ta, rx_sinr_db))
+                    print("u:{},  preamble_id:{},  ta:{},  sinr_linear:{}".format(u, preamble_idx, ta, sinr_linear))
                     if preamble_idx in preamble_id_set:
                         detect_flag.append(True)
                     else:
                         detect_flag.append(False)
 
+                elif sinr_linear>0:
+                    print("u:{},  preamble_id:{},  sinr_linear:{}".format(u, preamble_idx, sinr_linear))
+
                 preamble_idx += 1
 
         if len(preamble_id_set) == len(detect_flag):
-            print("==========检测成功==========")
+            print("======================检测成功======================")
             detect_result = 0
         elif len(preamble_id_set) < len(detect_flag):
-            print("===========虚检===========")
+            print("======================虚检======================")
             detect_result = 1
         elif len(preamble_id_set) > len(detect_flag):
-            print("===========漏检===========")
+            print("======================漏检======================")
             detect_result = -1
 
         return detect_result

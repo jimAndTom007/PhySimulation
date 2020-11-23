@@ -25,10 +25,10 @@ class PrachIncoder(Moudel):
         self.rb_start = kwargs.get('rb_start', 0)
         self.antnum = kwargs.get('antnum', 0)
 
-    def incoder(self, sinr,ue_sched):
+    def incoder(self, sinr, ue_sched):
         sequence = ue_sched.get_preamble_sequence()
         resource_grid, re_pos, rb_num = self.frequency_resource_mapping(ue_sched, sequence)
-        resource_grid = self.tx_power_update(resource_grid,sinr)
+        resource_grid = self.tx_power_update(resource_grid, sinr)
         frame = self.freq_time_trans(resource_grid, ue_sched)
 
         ue_sched.add_property('re_pos', re_pos)
@@ -46,7 +46,7 @@ class PrachIncoder(Moudel):
         k = int(ue_sched.pusch_scs / ue_sched.prach_scs)
         resource_grid = np.zeros([self.antnum, ue_sched.fftsize_ue], complex)
         idx_start = k * self.rb_start * 12 + re_offset_prach
-        resource_grid[0, idx_start:idx_start + ue_sched.l_ra] = sequence
+        resource_grid[:, idx_start:idx_start + ue_sched.l_ra] = np.tile(sequence[None, :], [self.antnum, 1])
         return resource_grid, idx_start, rb_num
 
     def tx_power_update(self, d_in, sinr):

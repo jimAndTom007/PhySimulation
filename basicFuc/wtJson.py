@@ -106,12 +106,13 @@ def write(json_dict, folder_path, name, suff='.json'):
     with open(filepath, 'w') as fid:
         fid.write(json_str)
 
+
 def gen_simu_json():
     folder_path = os.path.join(os.path.abspath('..'), r'demoJson')
-    ttinum = 1
-    uenum_set = [1]
-    N_set = [10, 20, 30, 40]
-    M_set = [5, 10, 15, 20]
+    ttinum = 200
+    uenum_set = [1, 2]
+    N_set = [30, 50, 70, 90, 120]
+    M_set = [5, 15, 25, 35]
     json_dict['BeamHeadParameter']['TTICyclicNum'] = ttinum
     for uenum in uenum_set:
         folder_path1 = os.path.join(folder_path, 'Ue{}'.format(uenum))
