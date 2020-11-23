@@ -107,13 +107,14 @@ def write(json_dict, folder_path, name, suff='.json'):
         fid.write(json_str)
 
 
-def gen_simu_json():
-    folder_path = os.path.join(os.path.abspath('..'), r'demoJson')
-    ttinum = 200
-    uenum_set = [1, 2]
-    N_set = [30, 50, 70, 90, 120]
-    M_set = [5, 15, 25, 35]
+def gen_simu_json(folder_path, **kwargs):
+    # folder_path = os.path.join(os.path.abspath('..'), r'demoJson')
+    ttinum = kwargs.get('ttinum', 1)
+    uenum_set = kwargs.get('uenum_set', [1])
+    N_set = kwargs.get('n_set', [30, 50, 70, 90, 120])
+    M_set = kwargs.get('m_set', [5, 15, 25, 35])
     json_dict['BeamHeadParameter']['TTICyclicNum'] = ttinum
+    folder_set = []
     for uenum in uenum_set:
         folder_path1 = os.path.join(folder_path, 'Ue{}'.format(uenum))
         if os.path.exists(folder_path1):
@@ -127,7 +128,9 @@ def gen_simu_json():
                 #     json_dict['TTI_Parameter'][0]['UeParameter'][ueidx]['PrachDecoder']
 
                 write(json_dict, folder_path1, r'prach_B4_3km_N{}_M{}'.format(N, M))
-
+        folder_set.append(folder_path1)
+    return folder_set
 
 if __name__ == '__main__':
-    gen_simu_json()
+    folder_path = os.path.join(os.path.abspath('..'), r'demoJson')
+    gen_simu_json(folder_path)

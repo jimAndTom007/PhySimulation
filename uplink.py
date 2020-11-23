@@ -57,7 +57,7 @@ class UeTransReceiver(MultiChannel):
         pass
 
 
-def main(sinr_set, config_path):
+def main(sinr_set, config_path, fileIndex=0):
     """主进程"""
     with open(config_path, 'r', encoding='utf-8') as fid:
         json_config = json.load(fid)
@@ -71,7 +71,7 @@ def main(sinr_set, config_path):
     simu_result = np.zeros([len(sinr_set), tti_num])
     for sinr_idx, sinr in enumerate(sinr_set):
         for tti_idx in range(tti_num):
-            print("开始检测: {} ==> sinr:{},  ttiIndex:{}".format(filename, sinr, tti_idx))
+            print("开始检测: {} fileIndex:{} ==> sinr:{},  ttiIndex:{}".format(filename, fileIndex, sinr, tti_idx))
             config_tti = config_dict[0]
             cell_num = config_tti.get('CellNum', 1)
             slot_id = config_tti.get('Slot_id', 1)
@@ -102,13 +102,17 @@ def main(sinr_set, config_path):
 
 if __name__ == '__main__':
     tic = timer()
-    folder = os.path.join(os.path.dirname(__file__), r'demoJson', 'Ue2')
+    folder = os.path.join(os.path.dirname(__file__), r'demoJson', 'Ue1')
     # json_path = os.path.join(folder, 'demoJson', 'prach_test.json')
     file_set = os.listdir(folder)
-    sinr_set = [-15,-10, -5, 5]
+    sinr_set = [-15, -10, -5, 5]
+    path_set = []
     for filename in file_set:
         if os.path.splitext(filename)[1] == '.json':
             json_path = os.path.join(folder, filename)
-            main(sinr_set, json_path)
+            path_set.append(json_path)
+
+    for json_path, idx in path_set:
+        main(sinr_set, json_path, idx)
     toc = timer()
     print("运行时间为：{}s".format(toc - tic))
