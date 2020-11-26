@@ -10,14 +10,14 @@ import scipy.io as sio
 import os
 
 
-def result_save(d_in, config_path):
+def result_save(d_in, config_path, sinr):
     folder = os.path.splitext(config_path)[0]
     filename = os.path.splitext(os.path.basename(config_path))[0]
-
+    filename = filename + 'TxSinr{}'.format(sinr)
     if not os.path.exists(folder):
         os.mkdir(folder)
-    else:
-        del_files(folder)
+    # else:
+    #     del_files(folder)
 
     file_path = os.path.join(folder, filename + '.mat')
     sio.savemat(file_path, {'data': d_in})
@@ -32,6 +32,7 @@ def del_files(path_file):
             del_files(f_path)
         else:
             os.remove(f_path)
+
 
 class ReadJson():
     def __init__(self):

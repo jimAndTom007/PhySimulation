@@ -57,7 +57,7 @@ class UeTransReceiver(MultiChannel):
         pass
 
 
-def main(sinr_set, config_path, fileIndex=0):
+def main(sinr, config_path, fileIndex=0):
     """主进程"""
     with open(config_path, 'r', encoding='utf-8') as fid:
         json_config = json.load(fid)
@@ -68,51 +68,63 @@ def main(sinr_set, config_path, fileIndex=0):
     tti_num = head_dict.get('TTICyclicNum', 1)
     plot_enable = head_dict['PlotEnable']
     json_obj = ReadJson()
-    simu_result = np.zeros([len(sinr_set), tti_num])
-    for sinr_idx, sinr in enumerate(sinr_set):
-        for tti_idx in range(tti_num):
-            print("开始检测: {} fileIndex:{} ==> sinr:{},  ttiIndex:{}".format(filename, fileIndex, sinr, tti_idx))
-            config_tti = config_dict[0]
-            cell_num = config_tti.get('CellNum', 1)
-            slot_id = config_tti.get('Slot_id', 1)
-            for cell_idx in range(cell_num):
-                ttiIndex = 0
-                config = json_obj.config_read(json_config, ttiIndex, cell_idx)
-                gnb_tranmreceiver = GnbTransReceiver(**dict(config['cell_config'], plot_enable=plot_enable))
-                uenum = config_tti['CellParameter'][cell_idx].get('UeNum', 1)
-                ue_sched_list = []
-                for ue_idx in range(uenum):
-                    ue_config_id = config['ue_config'][ue_idx]
-                    chan_config_id = config['channel_config'][ue_idx]
-                    ue_sched = PrachSchedule(**dict(ue_config_id, plot_enable=plot_enable))
-                    ue_trans_config_id = dict(**ue_config_id, **chan_config_id, plot_enable=plot_enable)
-                    ue_tranmreceiver = UeTransReceiver(**ue_trans_config_id)
-                    frame_id, ue_sched = ue_tranmreceiver.send(sinr, ue_sched)
-                    if ue_idx == 0:
-                        frame = np.zeros(frame_id.shape, complex)
-                    frame += frame_id
-                    ue_sched_list.append(ue_sched)
-                msg_result = gnb_tranmreceiver.receiver(frame, ue_sched_list)
-                simu_result[sinr_idx, tti_idx] = msg_result
+    simu_result = []
+    # for sinr_idx, sinr in enumerate(sinr_set):
+    for tti_idx in range(tti_num):
+        print("开始检测: {} fileIndex:{} ==> sinr:{},  ttiIndex:{}".format(filename, fileIndex, sinr, tti_idx))
+        config_tti = config_dict[0]
+        cell_num = config_tti.get('CellNum', 1)
+        slot_id = config_tti.get('Slot_id', 1)
+        for cell_idx in range(cell_num):
+            ttiIndex = 0
+            config = json_obj.config_read(json_config, ttiIndex, cell_idx)
+            gnb_tranmreceiver = GnbTransReceiver(**dict(config['cell_config'], plot_enable=plot_enable))
+            uenum = config_tti['CellParameter'][cell_idx].get('UeNum', 1)
+            ue_sched_list = []
+            for ue_idx in range(uenum):
+                ue_config_id = config['ue_config'][ue_idx]
+                chan_config_id = config['channel_config'][ue_idx]
+                ue_sched = PrachSchedule(**dict(ue_config_id, plot_enable=plot_enable))
+                ue_trans_config_id = dict(**ue_config_id, **chan_config_id, plot_enable=plot_enable)
+                ue_tranmreceiver = UeTransReceiver(**ue_trans_config_id)
+                frame_id, ue_sched = ue_tranmreceiver.send(sinr, ue_sched)
+                if ue_idx == 0:
+                    frame = np.zeros(frame_id.shape, complex)
+                frame += frame_id
+                ue_sched_list.append(ue_sched)
+            msg_result = gnb_tranmreceiver.receiver(frame, ue_sched_list)
+            simu_result.append(msg_result)
 
-    result_save(simu_result, config_path)
+    result_save(simu_result, config_path, sinr)
     if plot_enable:
         plt.show()
 
 
-if __name__ == '__main__':
-    tic = timer()
-    folder = os.path.join(os.path.dirname(__file__), r'demoJson', 'Ue1')
-    # json_path = os.path.join(folder, 'demoJson', 'prach_test.json')
-    file_set = os.listdir(folder)
-    sinr_set = [-15, -10, -5, 5]
-    path_set = []
-    for filename in file_set:
-        if os.path.splitext(filename)[1] == '.json':
-            json_path = os.path.join(folder, filename)
-            path_set.append(json_path)
+def run(sinr, filepath):
+    if isinstance(sinr, list) or isinstance(sinr, np.ndarray):
+        for sinr_ in sinr:
+            main(sinr_, filepath)
+    else:
+        main(sinr, filepath)
 
-    for json_path, idx in path_set:
-        main(sinr_set, json_path, idx)
-    toc = timer()
-    print("运行时间为：{}s".format(toc - tic))
+
+if __name__ == '__main__':
+    # tic = timer()
+    # folder = os.path.join(os.path.dirname(__file__), r'demoJson', 'Ue1')
+    # # json_path = os.path.join(folder, 'demoJson', 'prach_test.json')
+    # file_set = os.listdir(folder)
+    # sinr_set = [-15, -10, -5, 5]
+    # path_set = []
+    # for filename in file_set:
+    #     if os.path.splitext(filename)[1] == '.json':
+    #         json_path = os.path.join(folder, filename)
+    #         path_set.append(json_path)
+    #
+    # for json_path, idx in path_set:
+    #     main(sinr_set, json_path, idx)
+    # toc = timer()
+    # print("运行时间为：{}s".format(toc - tic))
+
+    folder = os.path.dirname(__file__)
+    json_path = os.path.join(folder, 'demoJson', 'prach_test.json')
+    run(-10, json_path)

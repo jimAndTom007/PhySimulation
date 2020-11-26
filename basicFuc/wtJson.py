@@ -9,8 +9,7 @@
 
 import json
 import os
-import numpy as np
-from UplinkFlawJson import del_files
+import shutil
 
 json_dict = {
     "BeamHeadParameter": {
@@ -62,7 +61,7 @@ json_dict = {
                 },
                 {
                     "UeIdx": 1,
-                    "Preamble_id": 10,
+                    "Preamble_id": 60,
                     "TimeOffset": 0,
                     "FrequencyOffset": 0,
                     "UeAntennaNum": 4,
@@ -78,7 +77,7 @@ json_dict = {
                 },
                 {
                     "UeIdx": 2,
-                    "Preamble_id": 60,
+                    "Preamble_id": 63,
                     "TimeOffset": 0,
                     "FrequencyOffset": 0,
                     "UeAntennaNum": 4,
@@ -118,7 +117,13 @@ def gen_simu_json(folder_path, **kwargs):
     for uenum in uenum_set:
         folder_path1 = os.path.join(folder_path, 'Ue{}'.format(uenum))
         if os.path.exists(folder_path1):
-            del_files(folder_path1)
+            try:
+                shutil.rmtree(folder_path1)
+            except OSError as e:
+                print("Error: %s : %s" % (folder_path1, e.strerror))
+
+        os.mkdir(folder_path1)
+
         for N in N_set:
             for M in M_set:
                 json_dict['TTI_Parameter'][0]['CellParameter'][0]['UeNum'] = uenum

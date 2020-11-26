@@ -1,7 +1,7 @@
 {
 	"BeamHeadParameter" : {
 		"TTICyclicNum" : 1,
-		"PlotEnable" : true
+		"PlotEnable" : false
 	},
 	"TTI_Parameter" : [
 		{
