@@ -10,10 +10,17 @@ import re
 from functools import reduce
 import numpy as np
 import matplotlib.pyplot as plt
+import copy
 
 plt.rcParams['font.sans-serif'] = ['SimHei']
 plt.rcParams['axes.unicode_minus'] = False
 
+
+def _green(string):
+    """
+    将字体转变为绿色
+    """
+    return r'\033[31m{}\033[0m'.format(string)
 
 class TimeStamp(object):
     def __init__(self, *kwarg, **kwargs):
@@ -21,13 +28,31 @@ class TimeStamp(object):
         self.radio_frame = kwargs.get('radio_frame', 0)
         self.sub_frame = kwargs.get('sub_frame', 0)
         self.slot_idx = kwargs.get('slot_idx', 0)
+        self.system_slot_id = kwargs.get('system_slot_id', 0)
+        self.mu = kwargs.get('mu', 1)
 
     def __repr__(self):
-        return '{},{},{}'.format(self.radio_frame, self.sub_frame, self.slot_idx)
+        return 'time_stamp: {},{},{}'.format(self.radio_frame, self.sub_frame, self.slot_idx)
+
+    # def __str__(self):
+    #     return _green('time_stamp: {},{},{}'.format(self.radio_frame, self.sub_frame, self.slot_idx))
+
+    def __next__(self):
+        self.system_slot_id += 1
+        self.radio_frame = self.system_slot_id // (10 * 2 ** self.mu)
+        remain_slot = self.system_slot_id % (10 * 2 ** self.mu)
+        self.sub_frame = remain_slot // (2 ** self.mu)
+        self.slot_idx = remain_slot % (2 ** self.mu)
+        return self
+
 
     def system_slot(self):
-        return self.radio_frame * 20 + self.sub_frame * 2 + self.slot_idx
+        slot_id = self.radio_frame * 10 * 2 ** self.mu + self.sub_frame * 2 ** self.mu + self.slot_idx
+        self.system_slot_id = slot_id
+        return slot_id
 
+    def show_list(self):
+        return copy.copy([self.radio_frame, self.sub_frame, self.slot_idx])
 
 
 class Moudel(object):
@@ -76,3 +101,10 @@ class Moudel(object):
 
     def registered(self):
         pass
+
+if __name__ == '__main__':
+    time_stamp=TimeStamp()
+    for i in range(10):
+
+        print(next(time_stamp))
+        time_stamp = next(time_stamp)

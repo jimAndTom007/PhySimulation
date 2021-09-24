@@ -31,6 +31,7 @@ class GnbTransReceiver(MultiChannel):
     def receiver(self, frame, ue_sched_list):
         frame = self.add_noise(frame)
         freq_vail = self.prachdecoder.deframe(frame, ue_sched_list[0])
+        freq_vail = self.prachdecoder.deframe(frame, ue_sched_list[0])
         msg_result = self.prachdecoder.decoder(freq_vail, ue_sched_list)
         return msg_result
 
@@ -127,4 +128,4 @@ if __name__ == '__main__':
 
     folder = os.path.dirname(__file__)
     json_path = os.path.join(folder, 'demoJson', 'prach_test.json')
-    run(-10, json_path)
+    run(30, json_path)

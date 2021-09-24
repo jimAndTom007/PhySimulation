@@ -24,8 +24,10 @@ class PrachDecoder(Moudel):
 
     def deframe(self, frame, ue_config):
         self.plot(abs(frame[0]), title='收端时域功率谱', xlable='功率')
-        frame, upsample_ratio = self.upsampling(frame, ue_config)
+        # frame, upsample_ratio = self.upsampling(frame, ue_config)
 
+        ##提取有效数据
+        upsample_ratio = int(self.gnb_resample / ue_config.ue_resample)
         cp_point = ue_config.cp_num * upsample_ratio
         data_len = ue_config.fftsize_ue * upsample_ratio
         repeat_num = ue_config.repeat_num
@@ -33,10 +35,15 @@ class PrachDecoder(Moudel):
         re_pos = ue_config.re_pos
         vail_data = frame[:, cp_point:cp_point + data_len * repeat_num]
         vail_data_reshape = np.reshape(vail_data, [-1, repeat_num, data_len])
-        ddc_data = self.downsampling(vail_data_reshape, l_ra)
+        ##移频
+        vail_data_move, seq_len = self.move_frequency(vail_data_reshape, ue_config)
+        ##DDC
+        ddc_data, after_ddc_len = self.downsampling(vail_data_move, l_ra)
+        self.after_ddc_len = after_ddc_len
+
         data_combine = self.data_combine(ddc_data)
-        freq_data = scf.fft(data_combine, axis=-1) / np.sqrt(data_combine.shape[-1])  # FIXME 降采后的频谱
-        freq_vail = freq_data[:, re_pos:re_pos + l_ra]
+        freq_data = scf.ifftshift(scf.fft(data_combine, axis=-1)) / np.sqrt(data_combine.shape[-1])  # FIXME 降采后的频谱
+        freq_vail = freq_data[:, (after_ddc_len - seq_len) // 2:(after_ddc_len - seq_len) // 2 + l_ra]
         self.plot(abs(data_combine[0]), title='降采后时域功率谱', ylable='功率')
         freq_db = 20 * np.log10(abs(freq_data))
         self.plot(freq_db[0], title='降采后频域功率谱', ylable='功率/dBm')
@@ -76,9 +83,8 @@ class PrachDecoder(Moudel):
                 if len(signal_idx) != 0:
                     signal_power_sum = np.sum(data_in_win[np.ix_(signal_idx)])
                     signal_power_mean = signal_power_sum / len(signal_idx)
-                    ta_idx = int(np.sum([(idx + 1) * data_in_win[idx] for idx in signal_idx]) / \
-                                 np.sum([data_in_win[idx] for idx in signal_idx]))
-                    ta_idx -= 1
+                    ta_idx = round(np.sum([idx * data_in_win[idx] for idx in signal_idx]) / \
+                                   np.sum([data_in_win[idx] for idx in signal_idx]), 2)
                     sinr_linear = np.around(signal_power_mean / noise_power_mean)
                 else:
                     # signal_power_sum = np.max(data_in_win)
@@ -87,17 +93,21 @@ class PrachDecoder(Moudel):
                     sinr_linear = 0
                 if sinr_linear >= detect_thread:
                     rx_sinr_linear = np.round(signal_power_sum / (noise_power_mean * fftsize)
-                                              * self.ddc_ratio / self.upsample_ratio, 3)
-                    rx_sinr_db = np.round(10 * np.log10(rx_sinr_linear), 3)
+                                              * self.ddc_ratio, 2)
+                    rx_sinr_db = np.round(10 * np.log10(rx_sinr_linear), 2)
                     ta = self.cal_ta(ta_idx, win_before_len, fftsize)
 
-                    print("u:{},  preamble_id:{},  ta:{},  sinr_linear:{}".format(u, preamble_idx, ta, sinr_linear))
+                    print("\033[1;31;40m u:{},  preamble_id:{},  ta:{}Ta,  sinr:{}dB, sinr_linear:{}\033[0m".format(u,
+                                                                                                                    preamble_idx,
+                                                                                                                    ta,
+                                                                                                                    rx_sinr_db,
+                                                                                                                    rx_sinr_linear))
                     if preamble_idx in preamble_id_set:
                         detect_flag.append(True)
                     else:
                         detect_flag.append(False)
 
-                elif sinr_linear>0:
+                elif sinr_linear > 0:
                     print("u:{},  preamble_id:{},  sinr_linear:{}".format(u, preamble_idx, sinr_linear))
 
                 preamble_idx += 1
@@ -134,7 +144,7 @@ class PrachDecoder(Moudel):
         ddc_data = sg.upfirdn(coffec, data, down=ddc_ratio, axis=-1)
         # ddc_data=data[:,:,1::ddc_ratio]
         self.add_property('ddc_ratio', ddc_ratio)
-        return ddc_data
+        return ddc_data, seq_len
 
     def data_combine(self, d_in):
         antnum, repeat_num = d_in.shape[:2]
@@ -146,7 +156,7 @@ class PrachDecoder(Moudel):
         l_ra = sched_config.l_ra
         ncs = sched_config.ncs
         win_len = fftsize * ncs // l_ra
-        win_pos = fftsize * cv // l_ra
+        win_pos = np.mod(fftsize - fftsize * cv // l_ra, fftsize)
         win_before_len = int(win_len * win_before)
         win_fore_len = win_len - win_before_len
         tmp_idx = np.arange(win_pos - win_before_len,
@@ -156,7 +166,33 @@ class PrachDecoder(Moudel):
         return win_in_idx, win_out_idx, win_before_len
 
     def cal_ta(self, ta_idx, win_before_len, fftsize):
-        tc_ratio = 480e3 * 4096 / self.gnb_resample
+        tc_ratio = self.after_ddc_len * self.ddc_ratio / fftsize
 
-        ta = (ta_idx - win_before_len) / fftsize * self.ddc_ratio * tc_ratio
+        ta = round((ta_idx - win_before_len) * tc_ratio, 2)
+
         return ta
+
+    def move_frequency(self, data, sched_config):
+        """
+        :param data: shape ==> [ant,repeatNum,dataLen]
+        :param sched_config:
+        :return:
+        """
+        l_ra = sched_config.l_ra
+        bwp_rbnum = 273
+        k = int(sched_config.pusch_scs / sched_config.prach_scs)
+        antnum, repeatnum, d_len = data.shape
+
+        if l_ra == 839:
+            seq_len = 840
+        elif l_ra == 139:
+            seq_len = 144
+        else:
+            raise
+        d_center = sched_config.re_pos + seq_len // 2
+        bwp_center = k * bwp_rbnum * 12 // 2
+        freq_offset = bwp_center - d_center
+        coe_phase = np.exp(2j * np.pi * freq_offset * np.arange(d_len) / d_len)
+        d_comp = data * np.tile(coe_phase[None, None, :], [antnum, repeatnum, 1])
+
+        return d_comp, seq_len

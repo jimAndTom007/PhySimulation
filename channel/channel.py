@@ -39,7 +39,9 @@ class Channel(Moudel):
         return d_out
 
     def time_phase_enable(self, d_in):
-        k = self.time_offset // 64
+        # k = self.time_offset // 64
+        k = self.time_offset ## 单位为1/122.88M s
+
         d_out = d_in[:, :-k].copy()
         d_out = np.concatenate([d_in[:, -k:], d_out], axis=-1)
         return d_out
